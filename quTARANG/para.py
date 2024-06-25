@@ -27,8 +27,6 @@ dt = 0.001
 # Choose the value of the non linerarity
 g = 0.1
 
-delta = 1e-12
-
 init_usrdef = False
 init_cond = 'rp'
 
@@ -41,8 +39,9 @@ op_path = "/mnt/Disk_14TB/Sachin/cpc_code/outputs/srp"
 
 # Choose the scheme need to implement in the code
 scheme = "TSSP"          # Choose the shemes <"TSSP">, <"RK4"> etc
-imgtime = False          # set <False> for real time evolution and <True> for imaginary time evolution
 
+imgtime = False          # set <False> for real time evolution and <True> for imaginary time evolution
+delta = 1e-12
 # To resume the Run
 resume = False
 

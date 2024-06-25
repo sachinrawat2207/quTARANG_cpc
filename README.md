@@ -1,8 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
-<!-- **quTARANG** is a Python package developed to study turbulence in quantum systems, specifically in atomic Bose-Einstein condensates by using the mean-field Gross-Pitaevskii equation (GPE). quTARANG is the GPU-CPU agnostic i.e., one can switch the code to run on a CPU or a GPU by setting a parameter `device` in `para.py` file which is discussed below in detail. It uses the Time-splitting pseudo-spectral (TSSP) to evolve the system. The stationary states can also be computed by evolving the GPE in imaginary time. This can be done in quTARANG by merely setting a parameters in `para.py`.
-It is also equipped with the functions for computing different statistical quanties such as spectra and fluxes of different energies and fluxes. -->
 **quTARANG** is a Python package designed for studying turbulence in quantum systems, specifically in atomic Bose-Einstein condensates (BECs), using the mean-field Gross-Pitaevskii equation (GPE) given by
 
 $i\hbar\partial_t\psi(\vec{r},t) = -\frac{\hbar^2}{2m}\nabla^2\psi(\vec{r},t) + V(\vec{r},t)\psi(\vec{r},t) + U_0|\psi(\vec{r},t)|^2\psi(\vec{r},t)$,
@@ -68,9 +66,6 @@ dt = 0.001
 # Choose the value of the non linerarity
 g = 0.1
 
-# Soping criteria in imaginary time evolution 
-delta = 1e-12
-
 init_usrdef = False
 init_cond = 'rp'
 
@@ -84,6 +79,8 @@ op_path = "/path/to/output/folder/"
 # Choose the scheme need to implement in the code
 scheme = "TSSP"          # Choose the shemes <"TSSP">, <"RK4"> etc
 imgtime = False          # set <False> for real time evolution and <True> for imaginary time evolution
+
+delta = 1e-12 # Soping criteria in imaginary time evolution 
 
 # To resume the Run
 resume = False
@@ -122,7 +119,44 @@ elif Nx != 1 and Ny != 1 and Nz != 1:
     dimension = 3  
 ```
 
-3. Modify the following `main.py` file:
+The description of the parmeters inside the para.py file is as follows: 
+
+* `real_dtype` and `complex_dtype` : These prameter set the precison of the arrays used in the code. `real_dtype` specifies the precision for real array and it can takes two values *`"float32"`* or *`"float64"`* for single and double precision arrays, while `complex_dtype` can takes the values *`"complex64"`* or *`"complex128"`* for setting the complex array as single and double precision, respectively.
+* `device` : Specify the device on which the code will run. Set it to *`"cpu"`* or *`"gpu"`* to run the code on the central processing unit (CPU) or graphics processing unit (GPU), respectively.
+* `device_rank` : For systems with multiple GPUs, this parameter specifies the GPU device on which the code will run. It accepts values from 0 (corresponding to the first GPU) to (number of GPUs - 1). The default value is 0.
+* `(Lx, Ly, Lz)` and `(Nx, Ny, Nz)` : These parameters define the box lengths and grid sizes along the $x-, \ y-$, and $z-$ directions. In two-dimensional simulations (2D runs), set `Lz` (length in z-direction) and `Nz` (number of grid points in z-direction) to 1.
+
+* `tamx, dt` :The `tmax` parameter specifies the total simulation time. It defines the maximum duration for which the simulation will run. The `dt` parameter, on the other hand, determines the time step size. 
+
+* `g` : Sets the value of nonlinearity in the system.
+* `init_usrdef` : This parameter controls whether the initial condition is defined by the user or by the code itself. It accepts Boolean values: *`True`* for user-defined initial conditions and *`False`* for code-defined initial conditions. The user can define user-defined initial conditions in two ways.
+    - The first way is to provide the path of the input directory to the parameter `in_path` containing initial wavefunction and potential data in the form of HDF5 files named `wfc.h5` and `pot.h5`. The datasets inside the `wfc.h5` and `pot.h5` files should be named `wfc` and `pot`, respectively. 
+    - The second way of defining the user-defined initial condition is through the `main.py` file which is described [here](#mainpy).  
+
+    For the *`False`* values of `init_usrdef` i.e., for code defined initial condition, the user needs to set the `init_cond` parameter.
+
+* `init_cond` :  If `init_usrdef` parameter is *`False`*, it will set the type of the code defined initial condition. In 2D simulations, it can take the values *`"rp"`* (random phase), *`"vl"`* (vortex lattice), and *`"rv"`* (random vortex). The number of vortices for *`"vl"`* and *`"rv"`* is specified in the quTARANG/initial_cond/dimension2.py file can be change accordingly inside the same file. For 3D simulations, only the *`"rp"`* (random phase) option is available. If init_usrdef is set to *`True`*, leave it unchanged.
+
+* `in_path` : Sets the path to the input directory containing the initial wavefunction and potential data if `init_usrdef` is *`True`* and the wants to provide initial condition through input files. 
+
+* `op_path` : Sets the path for the output folder where the data of the output will be stored.
+* `scheme` : Sets the scheme for the simulation. Currently, only the Time-splitting pseudo-spectral (TSSP) scheme is implemented in the code. Therefore, the parameter can only take the value *`"TSSP"`*.
+* `imgtime` : To compute the ground state, set this parameter to *`True`*. The code will then utilize the imaginary time approach to find the ground state.
+* `delta` : This parameter will sets the stopping criteria in case of computing the ground state. The deafault value of this parameter is *`1e-12`*.
+* `resume` : If the user wants to extend a simulation run, the user can do so by increasing the value of the `tmax` parameter and setting `resume` parameter to *`True`*.  The code will automatically load the most recently saved wavefunction and resume the simulation from that point.
+* `overwrite` : If the output folder already contains data and the user wants to overwrite it, he can do so by simply setting this parameter to *`True`*.
+* `wfc_start_step, wfc_iter_step` :  The `wfc_start_step` parameter determines the number of iterations after which the wavefunction starts saving. The `wfc_iter_step` parameter then controls the interval between subsequent wavefunction saves.
+* `save_rms, rms_start_step, rms_iter_step` : The `save_rms` parameter controls whether the code saves the root mean square (RMS) value of the condensate. Set it to *`True`* to enable saving RMS values otherwise set it to *`False`*. If user choose to enable RMS data saving, the `rms_start_step` and `rms_iter_step` parameter comes into play. `rms_start_step` parameter determines the number of iterations after which the RMS values are first saved and then `rms_iter_step` controls the interval between subsequent saves.
+
+* `save_en, en_start_step, en_iter_step` : Similarly, the `save_en` parameter controls whether the code saves energy data, while `en_start_step` and `en_iter_step` determine the starting iteration and interval for subsequent energy saves, respectively.
+* `t_print_step` : Sets the interval of no of after which the code will print on the terminal.
+
+
+
+2. Modify the following `main.py` file:
+The user can 
+#### main.py 
+
 
 ```python
 from quTARANG import para
@@ -155,11 +189,23 @@ G = gpe.GPE(wfcfn = None, potfn = None)
 
 evolution.time_advance(G)
 ```
-4. Once the `para.py` and `main.py` file sets, the one can run the simulations using:
+3. Once the `para.py` and `main.py` file sets, the one can run the simulations using:
 
 ```python
 python main.py
 ```
+## 3) Output format
 
 
-## 3) Postprocessing
+
+## 4) Postprocessing 
+1. Once the output from the ***quTARANG*** has been generated inside the output folder, the user can postprocess the data using the functions inside the `postprocessing` folder. The structre directories and files inside the `postprocessing` folder is as follows:
+```
+├── plot_energy.py
+├── plot_rms.py
+├── plot_spectra.ipynb
+└── postprocessing
+    ├── config.py
+    └── libs
+```
+The main file inside the `postprocessing` folder is `config.py` file, where user will set the location of the output data folder. Once it is done the user can plot energy and rms evolution by running `plot_energy.py` file and `plot_rms.py` respectively. The output plots will be stored inside a postprocessing folder which will be created while postprocessing inside output folder. The jupyter-notebook `plot_spectra.ipynb` contains the commands to generate the spectra and fluxes with the description of them in form of comments. 
